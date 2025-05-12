@@ -25,13 +25,33 @@ connectDB();
 const app = express();
 
 // CORS configuration
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+// Create an array of allowed origins, including the URL with and without trailing slash
+const allowedOrigins = [
+  frontendUrl,
+  frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl + '/',
+  'http://localhost:5174',
+  'http://localhost:5173',
+  'http://localhost:5175'
+];
+
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, 'http://localhost:5174', 'http://localhost:5173', 'http://localhost:5175'], // Allow specific origins
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('Blocked by CORS:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
 // Log the allowed origins for debugging
-console.log('Allowed origins:', [process.env.FRONTEND_URL, 'http://localhost:5174', 'http://localhost:5173', 'http://localhost:5175']);
+console.log('Allowed origins:', allowedOrigins);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
